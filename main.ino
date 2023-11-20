@@ -120,18 +120,26 @@ void loop(){
 
 
     // Now the main loop is active, we should not do anything until a pulse happens.
-    bool pulse_receieved = digitalRead(ROTATION_ENCODER) == HIGH;
+    bool pulse_received = digitalRead(ROTATION_ENCODER) == HIGH;
+    
+    // Get the state of the reed switch.
+    bool reed_hit = debouncedDigitalRead(reed_button);
 
-
-    if(pulse_receieved == previousPulseState){
+    if(pulse_received == previousPulseState && !reed_hit){
+        return;
+    }
+    
+  
+    // If there's a reed hit, reset the current pulse count and remainder.
+    if (reed_hit) {
+        currentPulse = -1;
+        currentPulseRemainder = 0.0;
+    } else if (!pulse_received) { // If no pulse is received and no reed hit, exit the function.
         return;
     }
 
-    previousPulseState = pulse_receieved;
-
-    if(!pulse_receieved){
-        return;
-    }
+    // Update the previous pulse state to the current state for the next function call.
+    previousPulseState = pulse_received;
 
 
     // If it has been received, increment the counter and evalate knives.
