@@ -7,7 +7,7 @@
 #define DEAD_ROTATIONS 3
 #define PULSES_PER_REVOLUTION 688.421052648
 
-const int knifePins[24] = {27, 29, 31, 33, 35, 37, 39, 41, 43, 45, 47, 49, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48};
+const int knifePins[24] = {47, 40, 46, 38, 32, 31, 30, 24, 23,  22, 4, 3, 49, 43, 42, 41, 35, 34, 33, 27, 26, 25, 7, 6};
 const int knifeCount = sizeof(knifePins) / sizeof(knifePins[0]);
 
 
