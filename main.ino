@@ -1,15 +1,11 @@
-#define ROTATION_ENCODER 2 // This is where the input is fed.
-#define REED_SWITCH 7 // button
+#define ROTATION_ENCODER 45 // This is where the input is fed.
+#define REED_SWITCH 37 // button
 #define PULSES_OPEN 363.333333342
 #define DEBOUNCE_DELAY 50
 #define DEBUG 0
-#define MASTER_RELAY 12
+#define MASTER_RELAY 53
 #define DEAD_ROTATIONS 3
 #define PULSES_PER_REVOLUTION 688.421052648
-
-// 1. extract degrees into define and that should just work.
-// 2. If degrees is out by more than ten, shutdown MASTER_RELAY. Make ten a define variable.
-// 3. Cunt calculation. Make new potentiomere degrees added to the open and closed positions.
 
 const int knifePins[24] = {27, 29, 31, 33, 35, 37, 39, 41, 43, 45, 47, 49, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48};
 const int knifeCount = sizeof(knifePins) / sizeof(knifePins[0]);
