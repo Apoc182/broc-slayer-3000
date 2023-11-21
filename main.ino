@@ -30,40 +30,44 @@ Button reed_button, rotation_button;
 Button setupButton(int pin) {
   Button button;
   button.pin = pin;
-  button.state = LOW;
-  button.lastState = LOW;
-  button.lastDebounceTime = 0;
   pinMode(pin, INPUT_PULLUP);
+  button.state = digitalRead(button.pin);
+  button.lastState = button.state;
+  button.lastDebounceTime = 0;
   return button;
 }
 
 
 bool debouncedDigitalRead(Button &button) {
   int reading = digitalRead(button.pin);
-  bool hasRisen = false; // Default return value indicating no rising edge
+  bool hasFallen = false; // Default return value indicating no rising edge
 
   if (reading != button.lastState) {
     button.lastDebounceTime = millis();
   }
 
+
   if ((millis() - button.lastDebounceTime) > DEBOUNCE_DELAY) {
     if (reading != button.state) {
       // Button state has changed after debounce
-      if (button.state == LOW && reading == HIGH) {
+      if (button.state == HIGH && reading == LOW) {
         // Button has transitioned from LOW to HIGH indicating a rising edge
-        hasRisen = true;
+        hasFallen = true;
       }
       button.state = reading;
     }
   }
 
   button.lastState = reading;
-  return hasRisen;
+  return hasFallen;
 }
 
 
 void setup(){
     reed_button = setupButton(REED_SWITCH);
+
+    // Setup encoder as input.
+    pinMode(ROTATION_ENCODER, INPUT);
 
     // Set all the knife pins to output
     for(int i = 0; i < knifeCount; i++){
@@ -112,7 +116,9 @@ void loop(){
               Serial.println("Main loop activated");
               digitalWrite(MASTER_RELAY, 1);
               active = true;            
-            } 
+            }else{
+              return;
+            }
         }else{
             return;
         }
@@ -125,10 +131,13 @@ void loop(){
     // Get the state of the reed switch.
     bool reed_hit = debouncedDigitalRead(reed_button);
 
+
     if(pulse_received == previousPulseState && !reed_hit){
         return;
     }
-    
+
+    // Update the previous pulse state to the current state for the next function call.
+    previousPulseState = pulse_received;
   
     // If there's a reed hit, reset the current pulse count and remainder.
     if (reed_hit) {
@@ -137,10 +146,6 @@ void loop(){
     } else if (!pulse_received) { // If no pulse is received and no reed hit, exit the function.
         return;
     }
-
-    // Update the previous pulse state to the current state for the next function call.
-    previousPulseState = pulse_received;
-
 
     // If it has been received, increment the counter and evalate knives.
     currentPulse = currentPulse + 1;
