@@ -1,6 +1,6 @@
 #define ROTATION_ENCODER 45 // This is where the input is fed.
 #define REED_SWITCH 37 // button
-#define PULSES_OPEN 363.333333342
+#define PULSES_OPEN 310
 #define DEBOUNCE_DELAY 50
 #define DEBUG 0
 #define MASTER_RELAY 53
@@ -108,14 +108,18 @@ bool knifeShouldBeOpen(int knifeIndex){
 
 void loop(){ 
 
+    // Get the state of the reed switch.
+    bool reed_hit = debouncedDigitalRead(reed_button);
+
     // Assuming the counter should not start until the reed_switch goes high
     if(!active && !DEBUG){
-        if(debouncedDigitalRead(reed_button)){
+        if(reed_hit){
             reed_pulses_until_start -= 1;
             if(!reed_pulses_until_start){
               Serial.println("Main loop activated");
               digitalWrite(MASTER_RELAY, 1);
-              active = true;            
+              active = true;  
+              reed_hit = false;          
             }else{
               return;
             }
@@ -127,22 +131,22 @@ void loop(){
 
     // Now the main loop is active, we should not do anything until a pulse happens.
     bool pulse_received = digitalRead(ROTATION_ENCODER) == HIGH;
-    
-    // Get the state of the reed switch.
-    bool reed_hit = debouncedDigitalRead(reed_button);
-
 
     if(pulse_received == previousPulseState && !reed_hit){
         return;
     }
 
+    if(pulse_received){Serial.println(currentPulse);}
     // Update the previous pulse state to the current state for the next function call.
     previousPulseState = pulse_received;
-  
+
+    
+
     // If there's a reed hit, reset the current pulse count and remainder.
     if (reed_hit) {
         currentPulse = -1;
         currentPulseRemainder = 0.0;
+        fullyRotated = true;
     } else if (!pulse_received) { // If no pulse is received and no reed hit, exit the function.
         return;
     }
@@ -168,6 +172,9 @@ void loop(){
       Serial.println("currentPulse:" + String(currentPulse));
       Serial.println("currentPulseRemainder:" + String(currentPulseRemainder));
     }
+
+
+}
 
 
 }
