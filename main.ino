@@ -146,7 +146,7 @@ bool isWithinSpeedRange(float speed){
 
 void resetKnives(){
   for (int i = 0; i < knifeCount; i++) {
-    digitalWrite(knifePins[i], DEBUG);
+    digitalWrite(knifePins[i], !DEBUG);
   }
   fullyRotated = false;
 }
