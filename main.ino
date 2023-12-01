@@ -21,6 +21,7 @@ bool previousPulseState = false;
 bool fullyRotated = false;
 float previous_millis = 0.0;
 bool safety_mode = false;
+bool previous_reed_state = false;
 
 
 struct Button {
@@ -89,13 +90,17 @@ void setup() {
 }
 
 void knifeLogic() {
+  // String debug = "";
   for (int i = 0; i < knifeCount; i++) {
     if (knifeShouldBeOpen(i)) {
+      // debug += "Knife " + String(i) + " open\n";
       digitalWrite(knifePins[i], DEBUG);
     } else {
       digitalWrite(knifePins[i], !DEBUG);
+      // debug += "Knife " + String(i) + " closed\n";
     }
   }
+  // Serial.println(debug);
 }
 
 bool knifeShouldBeOpen(int knifeIndex) {
@@ -154,9 +159,16 @@ void resetKnives(){
 bool inSafeOperatingRange(bool reed_contact){
   float speed = getSpeed();
   bool within_speed_range = isWithinSpeedRange(speed);
+  // Serial.println("***");
+
+  // Serial.println("Max: " + String(MAX_PULSE_PER_MILLISECONDS * 1000));
+  // Serial.println("Min: " + String(MIN_PULSE_PER_MILLISECONDS * 1000));
+  // Serial.println("Speed: " + String(speed * 1000));
 
   // If we are over or underspeed, always return false.
   if(!within_speed_range){
+    // Serial.println("Unsafe");
+
     resetKnives();
     safety_mode = true;
     return false;
@@ -164,39 +176,55 @@ bool inSafeOperatingRange(bool reed_contact){
 
   // If we are in the correct speed range and we are not in safety mode, business as usual.
   if(!safety_mode){
+    // Serial.println("Safe still");
     return true;
   }
 
   // If we get to here, we are in the right range, but we are currently in safety mode.
   // Here, we should wait for the reed then return true.
   if(reed_contact){
+    // Serial.println("Safe again");
     safety_mode = false;
     return true;
   }
+
+  // Serial.println("waiting...");
   
   return false;
    
 }
 
+bool newPulseReceived(){
+  bool pulse_received = digitalRead(ROTATION_ENCODER) == HIGH;
+  if(pulse_received != previousPulseState){
+    previousPulseState = pulse_received;
+    return pulse_received;
+  }
+  return false;
+}
+
+
+
 void loop() {
 
 
   if(!deadRoationsElapsed()) return;
-  
 
-  // Now the main loop is active, we should not do anything until a pulse happens.
-  bool pulse_received = digitalRead(ROTATION_ENCODER) == HIGH;
-
-  // Get the state of the reed switch.
+  // Get the state of the reed switch. 
   bool reed_hit = debouncedDigitalRead(reed_button);
+  if(reed_hit) previous_reed_state = true;
+  
+  // Now the main loop is active, we should not do anything until a pulse happens.
+  bool pulse_received = newPulseReceived();
 
-
-  if (pulse_received == previousPulseState && !reed_hit) {
+  if (!pulse_received) {
     return;
   }
 
-  // Update the previous pulse state to the current state for the next function call.
-  previousPulseState = pulse_received;
+  if (previous_reed_state){
+    reed_hit = true;
+    previous_reed_state = false;
+  }
 
   // As a pulse has been received, we can run this here.
   if(!inSafeOperatingRange(reed_hit)) return;
@@ -205,7 +233,9 @@ void loop() {
   if (reed_hit) {
     currentPulse = -1;
     currentPulseRemainder = 0.0;
-  } else if (!pulse_received) { // If no pulse is received and no reed hit, exit the function.
+  } 
+
+  if (!pulse_received) { // If no pulse is received, exit the function.
     return;
   }
 
@@ -223,12 +253,6 @@ void loop() {
     currentPulseRemainder -= 1;
     currentPulse += 1;
     knifeLogic();
-  }
-
-  if (DEBUG) {
-    Serial.println("*");
-    Serial.println("currentPulse:" + String(currentPulse));
-    Serial.println("currentPulseRemainder:" + String(currentPulseRemainder));
   }
 
 
