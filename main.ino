@@ -7,8 +7,8 @@
 #define DEAD_ROTATIONS 3
 #define PULSES_PER_REVOLUTION 688.421052648
 
-#define MAX_PULSE_PER_MILLISECONDS 1/10
-#define MIN_PULSE_PER_MILLISECONDS 2/10
+#define MAX_PULSE_PER_MILLISECONDS 300.0/1000.0
+#define MIN_PULSE_PER_MILLISECONDS 1.0/1000.0
 
 const int knifePins[24] = {47, 40, 46, 38, 32, 31, 30, 24, 23,  22, 4, 3, 49, 43, 42, 41, 35, 34, 33, 27, 26, 25, 7, 6};
 const int knifeCount = sizeof(knifePins) / sizeof(knifePins[0]);
@@ -90,17 +90,17 @@ void setup() {
 }
 
 void knifeLogic() {
-  // String debug = "";
+//  String debug = "";
   for (int i = 0; i < knifeCount; i++) {
     if (knifeShouldBeOpen(i)) {
-      // debug += "Knife " + String(i) + " open\n";
+//      debug += "Knife " + String(i) + " open\n";
       digitalWrite(knifePins[i], DEBUG);
     } else {
       digitalWrite(knifePins[i], !DEBUG);
-      // debug += "Knife " + String(i) + " closed\n";
+//      debug += "Knife " + String(i) + " closed\n";
     }
   }
-  // Serial.println(debug);
+//  Serial.println(debug);
 }
 
 bool knifeShouldBeOpen(int knifeIndex) {
@@ -129,6 +129,7 @@ bool deadRoationsElapsed() {
   reed_pulses_until_start -= 1;
   if(reed_pulses_until_start == 0){
     Serial.println("Dead rotations complete.");
+    digitalWrite(MASTER_RELAY, 1);
     return true;
   }
   return false;
@@ -161,13 +162,13 @@ bool inSafeOperatingRange(bool reed_contact){
   bool within_speed_range = isWithinSpeedRange(speed);
   // Serial.println("***");
 
-  // Serial.println("Max: " + String(MAX_PULSE_PER_MILLISECONDS * 1000));
-  // Serial.println("Min: " + String(MIN_PULSE_PER_MILLISECONDS * 1000));
-  // Serial.println("Speed: " + String(speed * 1000));
+//   Serial.println("Max: " + String(MAX_PULSE_PER_MILLISECONDS * 1000));
+//   Serial.println("Min: " + String(MIN_PULSE_PER_MILLISECONDS * 1000));
+//   Serial.println("Speed: " + String(speed * 1000));
 
   // If we are over or underspeed, always return false.
   if(!within_speed_range){
-    // Serial.println("Unsafe");
+//     Serial.println("Unsafe");
 
     resetKnives();
     safety_mode = true;
@@ -176,19 +177,19 @@ bool inSafeOperatingRange(bool reed_contact){
 
   // If we are in the correct speed range and we are not in safety mode, business as usual.
   if(!safety_mode){
-    // Serial.println("Safe still");
+//     Serial.println("Safe still");
     return true;
   }
 
   // If we get to here, we are in the right range, but we are currently in safety mode.
   // Here, we should wait for the reed then return true.
   if(reed_contact){
-    // Serial.println("Safe again");
+//     Serial.println("Safe agaDeadin");
     safety_mode = false;
     return true;
   }
 
-  // Serial.println("waiting...");
+//   Serial.println("waiting...");
   
   return false;
    
@@ -229,6 +230,7 @@ void loop() {
   // As a pulse has been received, we can run this here.
   if(!inSafeOperatingRange(reed_hit)) return;
 
+//  Serial.println("Past safety");
   // If there's a reed hit, reset the current pulse count and remainder.
   if (reed_hit) {
     currentPulse = -1;
@@ -238,6 +240,8 @@ void loop() {
   if (!pulse_received) { // If no pulse is received, exit the function.
     return;
   }
+
+//  Serial.println("Pulse received");
 
   // If it has been received, increment the counter and evalate knives.
   currentPulse = currentPulse + 1;
