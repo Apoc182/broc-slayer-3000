@@ -173,7 +173,6 @@ bool inSafeOperatingRange(bool reed_contact){
 
     resetKnives();
     safety_mode = true;
-    fullyRotated = false;
     return false;
   }
 
@@ -188,6 +187,7 @@ bool inSafeOperatingRange(bool reed_contact){
   if(reed_contact){
 //     Serial.println("Safe agaDeadin");
     safety_mode = false;
+    fullyRotated = false;
     return true;
   }
 
