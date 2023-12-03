@@ -173,6 +173,7 @@ bool inSafeOperatingRange(bool reed_contact){
 
     resetKnives();
     safety_mode = true;
+    fullyRotated = false;
     return false;
   }
 
@@ -206,6 +207,12 @@ bool newPulseReceived(){
 }
 
 
+void resetCounter(){
+  currentPulse = -1;
+  currentPulseRemainder = 0.0;
+  fullyRotated = true;
+}
+
 
 void loop() {
 
@@ -232,16 +239,15 @@ void loop() {
     previous_reed_state = false;
   }
 
+  // If there's a reed hit, reset the current pulse count and remainder.
+  if (reed_hit) {
+    resetCounter();
+  } 
+
   // As a pulse has been received, we can run this here.
   if(!inSafeOperatingRange(reed_hit)) return;
 
 //  Serial.println("Past safety");
-  // If there's a reed hit, reset the current pulse count and remainder.
-  if (reed_hit) {
-    currentPulse = -1;
-    currentPulseRemainder = 0.0;
-    fullyRotated = true;
-  } 
 
 //  Serial.println("Pulse received");
 
