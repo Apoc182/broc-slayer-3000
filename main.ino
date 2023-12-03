@@ -16,6 +16,7 @@ const int knifeCount = sizeof(knifePins) / sizeof(knifePins[0]);
 
 float speedAverageArray[SPEED_ROLLING_AVERAGE_STEP];
 int currentSpeedIndex = 0;
+float speedSumCache = 0.0;
 
 
 int currentPulse = -1; // Variable for saving pulses count. This begins at negative 1 so when the loop starts, it can evalute from 0.
@@ -158,16 +159,13 @@ float getSpeed(){
 
 float getRollingAverage(){
   float speed = getSpeed();
+  speedSumCache -= speedAverageArray[currentSpeedIndex];
   speedAverageArray[currentSpeedIndex] = speed;
-
-  float total = 0.0;
-  for(int i=0; i < SPEED_ROLLING_AVERAGE_STEP; i++){
-    total += speedAverageArray[i];
-  }
+  speedSumCache += speedAverageArray[currentSpeedIndex];
 
   currentSpeedIndex = (currentSpeedIndex + 1) % SPEED_ROLLING_AVERAGE_STEP;
 
-  return total / SPEED_ROLLING_AVERAGE_STEP;
+  return speedSumCache / SPEED_ROLLING_AVERAGE_STEP;
 }
 
 bool isWithinSpeedRange(float speed){
