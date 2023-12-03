@@ -6,12 +6,16 @@
 #define MASTER_RELAY 53
 #define DEAD_ROTATIONS 3
 #define PULSES_PER_REVOLUTION 688.421052648
+#define SPEED_ROLLING_AVERAGE_STEP 50
 
 #define MAX_PULSE_PER_MILLISECONDS 300.0/1000.0
 #define MIN_PULSE_PER_MILLISECONDS 1.0/1000.0
 
 const int knifePins[24] = {47, 40, 46, 38, 32, 31, 30, 24, 23,  22, 4, 3, 49, 43, 42, 41, 35, 34, 33, 27, 26, 25, 7, 6};
 const int knifeCount = sizeof(knifePins) / sizeof(knifePins[0]);
+
+float speedAverageArray[SPEED_ROLLING_AVERAGE_STEP];
+int currentSpeedIndex = 0;
 
 
 int currentPulse = -1; // Variable for saving pulses count. This begins at negative 1 so when the loop starts, it can evalute from 0.
@@ -88,6 +92,11 @@ void setup() {
 
   Serial.begin(9600);
   Serial.println("Broc slayer 3000 engage");
+
+  // Initialise the speed array.
+  for(int i=0; i < SPEED_ROLLING_AVERAGE_STEP; i++){
+    speedAverageArray[i] = 0.0;
+  }
 }
 
 void knifeLogic() {
@@ -147,6 +156,20 @@ float getSpeed(){
   return speed;
 }
 
+float getRollingAverage(){
+  float speed = getSpeed();
+  speedAverageArray[currentSpeedIndex] = speed;
+
+  float total = 0.0;
+  for(int i=0; i < SPEED_ROLLING_AVERAGE_STEP; i++){
+    total += speedAverageArray[i];
+  }
+
+  currentSpeedIndex = (currentSpeedIndex + 1) % SPEED_ROLLING_AVERAGE_STEP;
+
+  return total / SPEED_ROLLING_AVERAGE_STEP;
+}
+
 bool isWithinSpeedRange(float speed){
   return speed <= MAX_PULSE_PER_MILLISECONDS && speed >= MIN_PULSE_PER_MILLISECONDS;
 }
@@ -159,7 +182,7 @@ void resetKnives(){
 }
 
 bool inSafeOperatingRange(bool reed_contact){
-  float speed = getSpeed();
+  float speed = getRollingAverage();
   bool within_speed_range = isWithinSpeedRange(speed);
   // Serial.println("***");
 
