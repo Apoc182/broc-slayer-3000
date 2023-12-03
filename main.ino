@@ -22,6 +22,7 @@ bool fullyRotated = false;
 float previous_millis = 0.0;
 bool safety_mode = false;
 bool previous_reed_state = false;
+bool first_cycle_complete = false;
 
 
 struct Button {
@@ -208,11 +209,15 @@ bool newPulseReceived(){
 
 void loop() {
 
-
   if(!deadRoationsElapsed()) return;
 
+  
+  // When dead rotatations are complete, the reed will be high. We do not want to include this in our future calculations.
+  bool reed_hit = debouncedDigitalRead(reed_button) && first_cycle_complete;
+  first_cycle_complete = true;
+  
+
   // Get the state of the reed switch. 
-  bool reed_hit = debouncedDigitalRead(reed_button);
   if(reed_hit) previous_reed_state = true;
   
   // Now the main loop is active, we should not do anything until a pulse happens.
@@ -235,11 +240,8 @@ void loop() {
   if (reed_hit) {
     currentPulse = -1;
     currentPulseRemainder = 0.0;
+    fullyRotated = true;
   } 
-
-  if (!pulse_received) { // If no pulse is received, exit the function.
-    return;
-  }
 
 //  Serial.println("Pulse received");
 
