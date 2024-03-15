@@ -1,17 +1,23 @@
 #define ROTATION_ENCODER 45 // This is where the input is fed.
 #define REED_SWITCH 37 // button
-#define PULSES_OPEN 310
+#define PULSES_OPEN 360
 #define DEBOUNCE_DELAY 50
 #define DEBUG 0
 #define MASTER_RELAY 53
 #define DEAD_ROTATIONS 3
-#define PULSES_PER_REVOLUTION 688.421052648
+#define PULSES_PER_REVOLUTION 720
+#define SPEED_ROLLING_AVERAGE_STEP 300
+#define REED_RESET_DAMPING_CONFIGURATION 34
 
-#define MAX_PULSE_PER_MILLISECONDS 300.0/1000.0
-#define MIN_PULSE_PER_MILLISECONDS 1.0/1000.0
+#define MAX_PULSE_PER_MILLISECONDS 220.0/1000.0
+#define MIN_PULSE_PER_MILLISECONDS 0.01/1000.0
 
-const int knifePins[24] = {47, 40, 46, 38, 32, 31, 30, 24, 23,  22, 4, 3, 49, 43, 42, 41, 35, 34, 33, 27, 26, 25, 7, 6};
+const int knifePins[20] = {47, 40, 46, 38, 32, 31, 30, 24, 23,  22, 4, 3, 49, 43, 42, 41, 35, 34, 33, 27};
 const int knifeCount = sizeof(knifePins) / sizeof(knifePins[0]);
+
+float speedAverageArray[SPEED_ROLLING_AVERAGE_STEP];
+int currentSpeedIndex = 0;
+float speedSumCache = 0.0;
 
 
 int currentPulse = -1; // Variable for saving pulses count. This begins at negative 1 so when the loop starts, it can evalute from 0.
@@ -88,6 +94,11 @@ void setup() {
 
   Serial.begin(9600);
   Serial.println("Broc slayer 3000 engage");
+
+  // Initialise the speed array.
+  for(int i=0; i < SPEED_ROLLING_AVERAGE_STEP; i++){
+    speedAverageArray[i] = 0.0;
+  }
 }
 
 void knifeLogic() {
@@ -147,8 +158,19 @@ float getSpeed(){
   return speed;
 }
 
+float getRollingAverage(){
+  float speed = getSpeed();
+  speedSumCache -= speedAverageArray[currentSpeedIndex];
+  speedAverageArray[currentSpeedIndex] = speed;
+  speedSumCache += speedAverageArray[currentSpeedIndex];
+
+  currentSpeedIndex = (currentSpeedIndex + 1) % SPEED_ROLLING_AVERAGE_STEP;
+
+  return speedSumCache / SPEED_ROLLING_AVERAGE_STEP;
+}
+
 bool isWithinSpeedRange(float speed){
-  return speed <= MAX_PULSE_PER_MILLISECONDS && speed >= MIN_PULSE_PER_MILLISECONDS;
+  return speed <= MAX_PULSE_PER_MILLISECONDS;
 }
 
 void resetKnives(){
@@ -159,9 +181,9 @@ void resetKnives(){
 }
 
 bool inSafeOperatingRange(bool reed_contact){
-  float speed = getSpeed();
+  float speed = getRollingAverage();
   bool within_speed_range = isWithinSpeedRange(speed);
-  // Serial.println("***");
+  // Serial.println("*");
 
 //   Serial.println("Max: " + String(MAX_PULSE_PER_MILLISECONDS * 1000));
 //   Serial.println("Min: " + String(MIN_PULSE_PER_MILLISECONDS * 1000));
@@ -240,7 +262,7 @@ void loop() {
   }
 
   // If there's a reed hit, reset the current pulse count and remainder.
-  if (reed_hit) {
+  if (reed_hit && currentPulse > (PULSES_PER_REVOLUTION - REED_RESET_DAMPING_CONFIGURATION)) {
     resetCounter();
   } 
 
